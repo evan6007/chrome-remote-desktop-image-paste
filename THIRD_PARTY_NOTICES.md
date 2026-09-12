@@ -2,7 +2,7 @@
 
 The source in this repository is provided under the MIT license in `LICENSE`.
 
-The optional network tunnel is **cloudflared**, copyright Cloudflare, Inc. and its contributors, licensed under Apache License 2.0. Its binary is not committed to or bundled in this source release. `scripts/Install-Tunnel.ps1` explicitly downloads the official Windows amd64 release after the user runs that script.
+The network tunnel is **cloudflared**, copyright Cloudflare, Inc. and its contributors, licensed under Apache License 2.0. Its binary is not committed to or bundled in the app installer. The receiver setup downloads the official Windows amd64 release and verifies its pinned SHA-256 and Windows publisher signature. `scripts/Install-Tunnel.ps1` is an optional developer download helper.
 
 - Upstream source and notices: https://github.com/cloudflare/cloudflared
 - Upstream license: https://github.com/cloudflare/cloudflared/blob/master/LICENSE

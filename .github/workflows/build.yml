@@ -8,14 +8,29 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Check public source tree
         shell: powershell
         run: .\scripts\Check-PublicTree.ps1
-      - name: Compile Receiver and run isolated logic tests
+      - name: Build universal installer and run isolated tests
         shell: powershell
-        run: .\scripts\Setup.ps1 -Action Receiver -BuildOnly
-      - name: Compile Sender using the same temporary pair
+        run: .\scripts\Build.ps1 -SelfTest
+      - name: Verify no private pairing material is embedded
         shell: powershell
-        run: .\scripts\Setup.ps1 -Action Sender -BuildOnly
-      # Deliberately no upload-artifact step: binaries contain private pairing credentials.
+        run: .\scripts\Check-Release.ps1
+      - name: Upload universal unsigned release candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: universal-installer-unsigned
+          path: dist/unsigned/*
+          if-no-files-found: error
+      - name: Upload test reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: test-reports
+          path: |
+            dist/self-test.txt
+            dist/clipboard-test.txt
+            dist/setup-test.txt
+          if-no-files-found: ignore

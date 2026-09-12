@@ -50,7 +50,7 @@ internal static class Wire {
     internal const int ChunkBytes = 144 * 1024;
     internal const int MaxBytes = 24 * 1024 * 1024;
     internal const int MaxPixels = 36 * 1000 * 1000;
-    internal static readonly string Prefix = "REMOTEIMAGE1:" + Pair.Key + ":";
+    internal static string Prefix { get { return "REMOTEIMAGE2:" + SecureImage.ControlId + ":"; } }
     internal static string Hash(byte[] bytes) {
         using (SHA256 h = SHA256.Create()) return BitConverter.ToString(h.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant();
     }
@@ -258,14 +258,14 @@ internal sealed class Dashboard : Form {
     internal bool HasConfirmedTransfer;
     internal Dashboard(bool isReceiver,Action togglePause,Action quit,Action reconnect=null) {
         receiver=isReceiver;
-        Text="遠端圖片橋接 v0.1.0 — "+(receiver?"接收端":"本機傳送端");
+        Text="遠端圖片橋接 v0.2.0 — "+(receiver?"接收端":"本機傳送端");
         BackColor=Color.FromArgb(26,30,38);ForeColor=Color.FromArgb(236,239,245);
         Font=new Font("Microsoft JhengHei UI",10);ClientSize=new Size(508,416);
         FormBorderStyle=FormBorderStyle.FixedSingle;MaximizeBox=false;ShowInTaskbar=true;
         StartPosition=FormStartPosition.Manual;
         Rectangle area=Screen.PrimaryScreen.WorkingArea;Location=new Point(area.Right-Width-24,area.Top+55);
         AddLabel("圖片剪貼簿橋接",22,20,455,33,17,true,ForeColor);
-        AddLabel(Environment.MachineName+"  ·  "+(receiver?"接收傳送端的圖片":"傳送圖片到遠端")+"  ·  v0.1.0",24,61,455,25,9,false,Color.FromArgb(166,179,199));
+        AddLabel(Environment.MachineName+"  ·  "+(receiver?"接收傳送端的圖片":"傳送圖片到遠端")+"  ·  v0.2.0",24,61,455,25,9,false,Color.FromArgb(166,179,199));
         state.SetBounds(24,106,365,29);state.Font=new Font(Font.FontFamily,12,FontStyle.Bold);state.Text="程式已啟動，等待圖片";Controls.Add(state);
         percent.SetBounds(411,106,72,29);percent.TextAlign=ContentAlignment.TopRight;percent.ForeColor=Color.FromArgb(92,214,177);percent.Font=new Font(Font.FontFamily,12,FontStyle.Bold);percent.Text="0%";Controls.Add(percent);
         meter.SetBounds(24,148,460,9);Controls.Add(meter);
@@ -274,7 +274,7 @@ internal sealed class Dashboard : Form {
         lastResult.SetBounds(24,273,460,32);lastResult.Font=new Font(Font.FontFamily,9);lastResult.ForeColor=Color.FromArgb(181,194,213);lastResult.Text="本次啟動尚未確認圖片傳輸。";Controls.Add(lastResult);
         AddLabel("關閉視窗會收至背景；再開工具就會顯示此視窗。",24,321,460,25,9,false,Color.FromArgb(149,162,182));
         ConfigureButton(pause,"暫停",24,359,102);pause.Click+=delegate { if(togglePause!=null) togglePause(); };Controls.Add(pause);
-        Button pair=new Button();ConfigureButton(pair,"重新配對",140,359,110);pair.Click+=delegate { if(reconnect!=null) reconnect(); };Controls.Add(pair);
+        Button pair=new Button();ConfigureButton(pair,"配對電腦",140,359,110);pair.Click+=delegate { if(reconnect!=null) reconnect(); };Controls.Add(pair);
         Button hide=new Button();ConfigureButton(hide,"收至背景",264,359,104);hide.Click+=delegate { Hide(); };Controls.Add(hide);
         Button stop=new Button();ConfigureButton(stop,"結束",382,359,102);stop.Click+=delegate { if(quit!=null) quit(); };Controls.Add(stop);
         VisibleChanged+=delegate { WriteVisibility(); };
@@ -302,7 +302,7 @@ internal sealed class Dashboard : Form {
         if(error) lastResult.Text="尚未完成，請檢查上方狀態再重試。";
     }
     void WriteVisibility() {
-        try { Directory.CreateDirectory(Bridge.Root);File.WriteAllText(Path.Combine(Bridge.Root,(receiver?"receiver":"sender")+"-window.txt"),"VERSION=0.1.0\r\nVISIBLE="+Visible+"\r\nPID="+Process.GetCurrentProcess().Id); } catch {}
+        try { Directory.CreateDirectory(Bridge.Root);File.WriteAllText(Path.Combine(Bridge.Root,(receiver?"receiver":"sender")+"-window.txt"),"VERSION=0.2.0\r\nVISIBLE="+Visible+"\r\nPID="+Process.GetCurrentProcess().Id); } catch {}
     }
     protected override void OnFormClosing(FormClosingEventArgs e) {
         if(!disposeRequested && e.CloseReason==CloseReason.UserClosing) { e.Cancel=true;Hide();return; }
@@ -337,7 +337,8 @@ internal sealed class Bridge : Form {
     DateTime nextNetworkCheck=DateTime.MinValue;
     Native.Hook hookCallback;
     IntPtr hookHandle;
-    internal static readonly string Root=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"RemoteImageBridge");
+    internal static string Root { get { return RuntimeSettings.Root; } }
+    internal BridgeSettings PendingSettings;
     internal Bridge(bool isReceiver,EventWaitHandle signal,bool showWindow) {
         receiver=isReceiver; role=receiver?"receiver":"sender";
         showSignal=signal;
@@ -353,17 +354,18 @@ internal sealed class Bridge : Form {
         pause.Click+=delegate { TogglePause();pause.Checked=paused; };
         menu.Items.Add(pause);
         menu.Items.Add("開啟狀態視窗",null,delegate { dashboard.ShowPanel(); });
+        menu.Items.Add("設定角色與登入啟動",null,delegate { Configure(); });
         tray.DoubleClick+=delegate { dashboard.ShowPanel(); };
         menu.Items.Add("顯示目前進度",null,delegate {
             if(receiver && readyArmed) progress.Report(100,"圖片已收到","已放入遠端剪貼簿，可以按 Ctrl+V",true,false);
             else if(assembler!=null) ShowReceiveProgress();
             else progress.Report(0,"圖片橋接待命","傳送端截圖後會自動傳送",true,false);
         });
-        menu.Items.Add("停止並取消開機啟動",null,delegate { using(RegistryKey k=Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run",true)) if(k!=null) k.DeleteValue("RemoteImageBridge",false); Close(); });
+        menu.Items.Add("停止並取消開機啟動",null,delegate { Installer.SetStartup(false);RuntimeSettings.Current.AutoStart=false;RuntimeSettings.Save(RuntimeSettings.Current);Close(); });
         menu.Items.Add("結束",null,delegate { Close(); }); tray.ContextMenuStrip=menu;
         hookCallback=OnKey;
         hookHandle=Native.SetWindowsHookEx(13,hookCallback,Native.GetModuleHandle(null),0);
-        Log("started-v0.1.0 hook="+(hookHandle!=IntPtr.Zero));
+        Log("started-v0.2.0 hook="+(hookHandle!=IntPtr.Zero));
         timer.Interval=80; timer.Tick+=delegate { Tick(); }; timer.Start();
         Status("待命"); Notice(receiver?"遠端接收端已啟動":"本機傳送端已啟動",receiver?"收到橋接圖片後即可貼上。":"連線確認後，新的截圖會自動傳送，不必切換視窗。");
         if(showWindow) dashboard.ShowPanel();
@@ -391,7 +393,7 @@ internal sealed class Bridge : Form {
     void Status(string state) {
         tray.Text="圖片橋接 " +(receiver?"遠端":"本機")+"："+state;
         dashboard.SetState(state,paused);
-        try { Directory.CreateDirectory(Root); File.WriteAllText(Path.Combine(Root,role+"-status.txt"),DateTime.Now.ToString("s")+" "+state+"\r\nPID="+Process.GetCurrentProcess().Id+"\r\nVERSION=0.1.0\r\nRESTORED="+restoredCount+"\r\nNETWORK="+networkConnected,Encoding.UTF8); } catch {}
+        try { Directory.CreateDirectory(Root); File.WriteAllText(Path.Combine(Root,role+"-status.txt"),DateTime.Now.ToString("s")+" "+state+"\r\nPID="+Process.GetCurrentProcess().Id+"\r\nVERSION=0.2.0\r\nRESTORED="+restoredCount+"\r\nNETWORK="+networkConnected,Encoding.UTF8); } catch {}
     }
     void Post(Action action) { try { if(!IsDisposed && IsHandleCreated) BeginInvoke(action); } catch {} }
     void ReportNetwork(int value,string title,string description,bool done,bool error) {
@@ -414,11 +416,15 @@ internal sealed class Bridge : Form {
     void PairNetwork() {
         if(receiver) {
             if(!SecureImage.ValidEndpoint(endpoint)) { Status("正在建立圖片連線，請稍候");return; }
-            Set(Wire.Prefix+"ENDPOINT:"+Convert.ToBase64String(Encoding.UTF8.GetBytes(endpoint)),readyArmed?readyPng:null,readyArmed?readyDib:null);
-            Status("配對資料已複製，請切回本機工具");
-        } else {
-            Set(Wire.Prefix+"LINK:"+Guid.NewGuid().ToString("N"),null,null);
-            Status("請切回 遠端畫面一次，完成配對");
+            using(PairingDialog dialog=new PairingDialog(endpoint,delegate {
+                PendingSettings=new BridgeSettings { Receiver=true,Key=BridgeSettings.NewKey(),Endpoint="",AutoStart=RuntimeSettings.Current.AutoStart };
+            })) dialog.ShowDialog(dashboard);
+            if(PendingSettings!=null) Close();
+        } else Configure();
+    }
+    void Configure() {
+        using(SetupWizard dialog=new SetupWizard(RuntimeSettings.Current,true)) {
+            if(dialog.ShowDialog(dashboard)==DialogResult.OK) { PendingSettings=dialog.Result;Close(); }
         }
     }
     bool AcceptNetworkImage(byte[] png,string id,DateTime created) {
@@ -470,7 +476,7 @@ internal sealed class Bridge : Form {
     }
     void Receive(string text) {
         string[] p=Wire.Parse(text); if(p==null || p.Length<2) return;
-        if(p[0]=="LINK" && p.Length==2) { PairNetwork();return; }
+        if(p[0]=="LINK" && p.Length==2) { return; }
         if(p[0]=="READY" && p.Length==2 && p[1]==readyId && readyPng!=null) {
             if(!Clip.HasImage) Set(null,readyPng,readyDib);
             return;
@@ -583,47 +589,49 @@ internal static class Program {
     static Mutex singleton;
     [STAThread] static int Main(string[] args) {
         try {
-            if(args.Length>0 && args[0]=="--self-test") { SelfTest.Run(args.Length>1?args[1]:Path.Combine(Bridge.Root,"test-result.txt"));return 0; }
-            if(args.Length>0 && args[0]=="--clipboard-test") { SelfTest.ClipboardRun(args[1]);return 0; }
-            if(args.Length>0 && args[0]=="--progress-test") { SelfTest.ProgressRun(args[1]);return 0; }
-            if(args.Length>0 && args[0]=="--native-image-test") { SelfTest.NativeImageRun(args[1]);return 0; }
-            if(args.Length>0 && args[0]=="--dashboard-test") { SelfTest.DashboardRun(args[1]);return 0; }
-            if(args.Length>0 && args[0]=="--network-benchmark") { SelfTest.NetworkRun(args[1],args[2]);return 0; }
-            bool receiver=Pair.IsReceiver;
-            bool showWindow=args.Length==0 || args[0]!="--background";
-            if(args.Length==0 || args[0]=="--install") {
-                Directory.CreateDirectory(Bridge.Root);
-                string destination=Path.Combine(Bridge.Root,"RemoteImageBridge.exe");
-                string source=Application.ExecutablePath;
-                if(!source.Equals(destination,StringComparison.OrdinalIgnoreCase) && (!File.Exists(destination) || Wire.Hash(File.ReadAllBytes(source))!=Wire.Hash(File.ReadAllBytes(destination)))) {
-                    foreach(Process old in Process.GetProcessesByName("RemoteImageBridge")) {
-                        try {
-                            if(old.Id!=Process.GetCurrentProcess().Id && old.SessionId==Process.GetCurrentProcess().SessionId && old.MainModule.FileName.Equals(destination,StringComparison.OrdinalIgnoreCase)) { old.Kill();old.WaitForExit(3000); }
-                        } finally { old.Dispose(); }
-                    }
-                    foreach(Process oldTunnel in Process.GetProcessesByName("cloudflared")) {
-                        try {
-                            if(oldTunnel.SessionId==Process.GetCurrentProcess().SessionId && oldTunnel.MainModule.FileName.Equals(Path.Combine(Bridge.Root,"cloudflared.exe"),StringComparison.OrdinalIgnoreCase)) { oldTunnel.Kill();oldTunnel.WaitForExit(3000); }
-                        } finally { oldTunnel.Dispose(); }
-                    }
-                    File.Copy(source,destination,true);
-                }
-                using(RegistryKey k=Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run"))
-                    k.SetValue("RemoteImageBridge","\""+destination+"\" --background");
-                Process.Start(new ProcessStartInfo(destination,"--show") { UseShellExecute=false,CreateNoWindow=true });return 0;
-            }
-            bool created;singleton=new Mutex(true,"Local\\RemoteImageBridge-"+(receiver?"receiver":"sender"),out created);
-            string signalName="Local\\RemoteImageBridge-show-"+(receiver?"receiver":"sender");
-            if(!created) {
-                if(showWindow) using(EventWaitHandle signal=new EventWaitHandle(false,EventResetMode.AutoReset,signalName)) signal.Set();
+            if(args.Length>1 && (args[0]=="--self-test" || args[0]=="--clipboard-test" || args[0]=="--setup-test" || args[0]=="--tunnel-test" || args[0]=="--transport-test")) {
+                RuntimeSettings.TestRoot=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args[1])),"isolated-"+Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(RuntimeSettings.Root);
+                RuntimeSettings.Current=new BridgeSettings { Receiver=true,Key=BridgeSettings.NewKey(),Endpoint="" };
+                if(args[0]=="--self-test") { SelfTest.Run(args[1]);ConfigurationTests.Run(args[1]); }
+                if(args[0]=="--clipboard-test") SelfTest.ClipboardRun(args[1]);
+                if(args[0]=="--setup-test") ConfigurationTests.Render(args[1]);
+                if(args[0]=="--transport-test") ConfigurationTests.Transport(args[1]);
+                if(args[0]=="--tunnel-test") { Installer.EnsureTunnel(delegate {});File.WriteAllText(args[1],"PASS official tunnel download, SHA-256 and Windows signature"); }
                 return 0;
             }
             Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
-            using(EventWaitHandle signal=new EventWaitHandle(false,EventResetMode.AutoReset,signalName))
-            using(Bridge app=new Bridge(receiver,signal,showWindow)) Application.Run(app);
-            singleton.ReleaseMutex();singleton.Dispose();return 0;
+            if(args.Length>0 && args[0]=="--uninstall") { Installer.Uninstall();return 0; }
+            if(args.Length>0 && args[0]=="--remove-installed") { Installer.RemoveInstalled();return 0; }
+            bool background=args.Length>0 && args[0]=="--background";
+            BridgeSettings settings=RuntimeSettings.Load();
+            if(!background && (!Installer.Installed || settings==null)) {
+                using(SetupWizard wizard=new SetupWizard(settings)) {
+                    if(wizard.ShowDialog()!=DialogResult.OK) return 0;
+                    settings=wizard.Result;
+                }
+                if(!Installer.Installed) { Installer.Launch();return 0; }
+            }
+            if(settings==null) return 0; // Unconfigured startup must never collect clipboard images.
+            RuntimeSettings.Current=settings;
+            bool created;singleton=new Mutex(true,"Local\\RemoteImageBridge-v2",out created);
+            string signalName="Local\\RemoteImageBridge-show-v2";
+            if(!created) {
+                if(!background) using(EventWaitHandle signal=new EventWaitHandle(false,EventResetMode.AutoReset,signalName)) signal.Set();
+                singleton.Dispose();
+                return 0;
+            }
+            BridgeSettings pending=null;
+            try {
+                using(EventWaitHandle signal=new EventWaitHandle(false,EventResetMode.AutoReset,signalName))
+                using(Bridge app=new Bridge(settings.Receiver,signal,!background)) { Application.Run(app);pending=app.PendingSettings; }
+            } finally { singleton.ReleaseMutex();singleton.Dispose(); }
+            if(pending!=null) { Installer.Install(pending);Installer.Launch(); }
+            return 0;
         } catch(Exception e) {
-            Directory.CreateDirectory(Bridge.Root);File.WriteAllText(Path.Combine(Bridge.Root,"startup-error.txt"),e.GetType().Name+": "+e.Message);return 1;
+            Directory.CreateDirectory(Bridge.Root);File.WriteAllText(Path.Combine(Bridge.Root,"startup-error.txt"),RuntimeSettings.TestRoot!=null?e.ToString():e.GetType().Name);
+            if(args.Length==0) MessageBox.Show("啟動未完成："+e.Message,RuntimeSettings.Product,MessageBoxButtons.OK,MessageBoxIcon.Error);
+            return 1;
         }
     }
 }
@@ -685,7 +693,7 @@ internal static class SelfTest {
         Assert(rebuilt!=null && Wire.Hash(rebuilt)==Wire.Hash(png),"multi-packet PNG preserves all source bytes",results);
         byte[] dib=Clip.Dib(png);Assert(BitConverter.ToInt32(dib,4)==960 && BitConverter.ToInt32(dib,8)==540,"Windows DIB dimensions",results);
         Assert(Wire.Parse("ordinary text")==null,"ordinary text ignored",results);
-        Assert(Wire.Parse(Wire.Prefix.Replace(Pair.Key,new string('z',Pair.Key.Length))+"READY:"+id)==null,"other pairing key ignored",results);
+        Assert(Wire.Parse(Wire.Prefix.Replace(SecureImage.ControlId,new string('z',SecureImage.ControlId.Length))+"READY:"+id)==null,"other pairing key ignored",results);
         bool rejected=false;try { Assembler bad=new Assembler();bad.Accept(Wire.Parse(Wire.Packet(png,id,1))); } catch(InvalidDataException) { rejected=true; }
         Assert(rejected,"out-of-order initial packet rejected",results);
         rejected=false;try { string[] p=Wire.Parse(Wire.Packet(png,id,0));p[4]="999999999";new Assembler().Accept(p); } catch(InvalidDataException) { rejected=true; }
@@ -748,11 +756,23 @@ internal static class SelfTest {
         }
     }
     internal static void ClipboardRun(string output) {
+        Exception failure=null;
+        Thread worker=new Thread(delegate() { try { ClipboardOnDesktop(output); } catch(Exception e) { failure=e; } });
+        worker.SetApartmentState(ApartmentState.STA);worker.Start();worker.Join();
+        if(failure!=null) throw new Exception("Isolated clipboard test failed",failure);
+    }
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    static void ClipboardOnDesktop(string output) {
         List<string> results=new List<string>();
         // A separate window station owns a separate clipboard. The interactive user's
         // clipboard and the running Chrome Remote Desktop session are never touched.
-        IntPtr station=Native.CreateWindowStation("RemoteImageBridgeTest-"+Guid.NewGuid().ToString("N"),0,0x000F037F,IntPtr.Zero);
-        if(station==IntPtr.Zero) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),"CreateWindowStation failed");
+        IntPtr station=Native.CreateWindowStation("CrdTest-"+Guid.NewGuid().ToString("N"),1,0x000F037F,IntPtr.Zero);
+        // Non-admin Windows processes cannot choose a name. CREATE_ONLY prevents
+        // reuse of an existing station, including any existing user's clipboard.
+        if(station==IntPtr.Zero && Marshal.GetLastWin32Error()==5) station=Native.CreateWindowStation(null,1,0x000F037F,IntPtr.Zero);
+        if(station==IntPtr.Zero) {
+            File.WriteAllText(output,"SKIP isolated clipboard: cannot create a NEW private window station; Windows error "+Marshal.GetLastWin32Error()+". Interactive clipboard was not accessed.");return;
+        }
         if(!Native.SetProcessWindowStation(station)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),"SetProcessWindowStation failed");
         IntPtr desktop=Native.CreateDesktop("BridgeTest",IntPtr.Zero,IntPtr.Zero,0,0x000F01FF,IntPtr.Zero);
         if(desktop==IntPtr.Zero) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),"CreateDesktop failed");

@@ -44,39 +44,33 @@ function overview(lang) {
   items.push(text(90,587,530,43,zh?'截完圖，自動傳送，不用另存檔':'Capture → send automatically',23,colors.muted,false,'center'));
   items.push(text(935,583,540,54,zh?'等進度 100%，再貼到目標程式':'Wait for 100%, then paste into your app',21,colors.muted,false,'center'));
   items.push(arrow(676,421,883,421),text(660,335,239,58,zh?'圖片自動送達':'Automatic transfer',22,colors.green,true,'center'),text(664,445,231,63,zh?'加密傳輸\n不用反覆點遠端視窗':'Encrypted transfer\nNo repeated refocusing',18,colors.muted,false,'center'));
-  items.push(box(60,695,1440,102,'#152530','none',16),text(88,711,1386,69,zh?'第一次請先安裝「遠端接收端」，再建立「本機傳送端」。\n每次使用：兩端連線已確認 → 本機重新截圖 → 遠端 Ctrl+V。':'First install the remote receiver, then create your local sender.\nDaily use: both connected → new local screenshot → Ctrl+V remotely.',23,colors.text));
+  items.push(box(60,695,1440,102,'#152530','none',16),text(88,711,1386,69,zh?'兩台下載同一個程式，貼上配對碼即可連線。\n每次使用：本機重新截圖 → 等進度 100% → 遠端 Ctrl+V。':'Install the same app on both PCs. Connect with a pairing code.\nDaily use: new local screenshot → wait for 100% → Ctrl+V remotely.',23,colors.text));
   return {id:'overview-'+lang,name:'overview-'+lang,canvasWidth:1560,canvasHeight:835,canvasColor:colors.paper,canvasOpacity:1,items};
 }
 function installation(lang) {
   const zh=lang==='zh';const items=[];
   items.push(text(54,35,990,30,'FIRST-TIME SETUP  /  WINDOWS',20,colors.green,true));
-  items.push(text(54,80,990,60,zh?'安裝順序：先遠端，再本機':'Install remotely first, then locally',39,colors.text,true));
-  items.push(text(54,144,990,38,zh?'步驟 1–3 都在同一台遠端電腦、同一個解壓縮資料夾完成。':'Steps 1–3 use the SAME extracted folder on the REMOTE computer.',21,colors.muted));
+  items.push(text(54,80,990,60,zh?'兩台安裝，貼上配對碼就能用':'Two installs. One pairing code.',39,colors.text,true));
+  items.push(text(54,144,990,38,zh?'兩台都下載同一個安裝檔，不用編譯或安裝 Chrome 外掛。':'Download the SAME installer on both PCs. No build or extension.',21,colors.muted));
   const steps=zh?[
-    ['遠端','下載原始碼並「全部解壓縮」','GitHub → Code → Download ZIP\n不要在 ZIP 裡直接執行檔案。'],
-    ['遠端','雙擊 1-Install-Receiver.cmd','安裝並開啟接收端；等待視窗顯示「連線已確認」。'],
-    ['仍在遠端','雙擊 2-Create-Sender.cmd','在同一個資料夾建立傳送端；不要另下載一份專案。'],
-    ['遠端 → 本機','把 Sender.exe 下載到本機','Google Remote 側邊欄 → 下載檔案\n選 dist / RemoteImageBridge-Sender.exe'],
-    ['本機','雙擊 RemoteImageBridge-Sender.exe','在家裡電腦執行；等待「連線已確認」，再重新截圖。'],
-    ['遠端','看到 100% 後，按 Ctrl + V','先點要貼上的程式輸入區，再貼上圖片。']
+    ['遠端 · 被你控制的電腦','安裝後選「接收圖片」','等連線已確認 → 按「配對電腦」→ 複製配對碼。'],
+    ['本機 · 手邊的電腦','安裝後選「傳送圖片」','貼上完整配對碼 → 安裝並啟動 → 等連線已確認。'],
+    ['開始使用','本機截圖，遠端 Ctrl + V','本機按 Win + Shift + S → 等 100% → 遠端貼上。']
   ]:[
-    ['REMOTE','Download source → Extract All','GitHub → Code → Download ZIP\nDo not run the scripts from inside the ZIP.'],
-    ['REMOTE','Run 1-Install-Receiver.cmd','Wait until the receiver window says the connection is verified.'],
-    ['STILL REMOTE','Run 2-Create-Sender.cmd','Keep using the SAME folder. Do not start from a new download.'],
-    ['REMOTE → LOCAL','Download the Sender EXE locally','Remote Desktop sidebar → Download file\nChoose dist / RemoteImageBridge-Sender.exe'],
-    ['LOCAL','Run RemoteImageBridge-Sender.exe','Wait for connection verified, then take a NEW screenshot.'],
-    ['REMOTE','Wait for 100%, then Ctrl + V','Click the destination app input area and paste the image.']
+    ['REMOTE · THE CONTROLLED PC','Install and choose Receiver','Wait for connection verified → Pair computer → Copy pairing code.'],
+    ['LOCAL · THE PC IN FRONT OF YOU','Install and choose Sender','Paste the complete pairing code → Install and start.'],
+    ['READY TO USE','Screenshot locally. Ctrl + V remotely.','Win + Shift + S locally → wait for 100% → paste remotely.']
   ];
   steps.forEach(([role,title,detail],i)=>{
-    const y=213+i*176;const accent=i===4?colors.blue:colors.amber;
+    const y=213+i*176;const accent=i===1?colors.blue:colors.amber;
     if(i<steps.length-1)items.push(arrow(78,y+60,78,y+190,colors.line,3,0));
     items.push(circle(53,y+20,50,accent),text(53,y+20,50,50,String(i+1),25,colors.paper,true,'center'));
     items.push(box(129,y,915,158,colors.card),text(154,y+10,852,26,role,17,accent,true));
     items.push(text(154,y+43,862,41,title,25,colors.text,true));
     items.push(text(154,y+88,862,57,detail,20,colors.muted));
   });
-  items.push(text(54,1290,990,60,zh?'接收端重開後網址會變：按「重新配對」。\n分享給朋友時，分享 GitHub 原始碼，不要分享自己的配對 EXE。':'Receiver restarted? Use Re-pair to refresh its address.\nShare the GitHub source with friends, not your private paired EXEs.',19,colors.muted));
-  return {id:'installation-'+lang,name:'installation-'+lang,canvasWidth:1100,canvasHeight:1380,canvasColor:colors.paper,canvasOpacity:1,items};
+  items.push(text(54,755,990,60,zh?'遠端工具重啟後，再複製一次新的配對碼。\n安裝檔可以分享，配對碼只交給自己的電腦。':'Receiver restarted? Copy its new pairing code to the sender.\nShare the installer freely. Keep your pairing code private.',19,colors.muted));
+  return {id:'installation-'+lang,name:'installation-'+lang,canvasWidth:1100,canvasHeight:845,canvasColor:colors.paper,canvasOpacity:1,items};
 }
 const pages=[overview('zh'),overview('en'),installation('zh'),installation('en')];
 const project={version:2,project:{id:'image-paste-guide',name:'Chrome Remote Desktop Image Paste — Guide',activePageId:pages[0].id,pages}};

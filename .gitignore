@@ -1,4 +1,4 @@
-# Every generated executable contains a private pairing key.
+# Keep build outputs, test fixtures and local/runtime credentials outside source control.
 .private/
 dist/
 artifacts/
@@ -16,3 +16,4 @@ EndpointConfig*.cs
 .vs/
 bin/
 obj/
+*.dpapi

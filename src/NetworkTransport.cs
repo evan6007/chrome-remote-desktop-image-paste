@@ -10,7 +10,11 @@ using System.Text.RegularExpressions;
 using System.Threading;
 
 internal static class SecureImage {
-    static byte[] Key(string purpose) { using(SHA256 s=SHA256.Create()) return s.ComputeHash(Encoding.UTF8.GetBytes(purpose+":"+Pair.Key)); }
+    static byte[] KeyFor(string purpose,string pairKey) { using(SHA256 s=SHA256.Create()) return s.ComputeHash(Encoding.UTF8.GetBytes(purpose+":"+pairKey)); }
+    static byte[] Key(string purpose) { return KeyFor(purpose,Pair.Key); }
+    internal static string ControlId { get { return Convert.ToBase64String(Key("image-control-v2")); } }
+    internal static string AuthFor(string key) { return Convert.ToBase64String(KeyFor("image-http-auth-v4",key)); }
+    internal static string ProofFor(string key,string value) { using(HMACSHA256 h=new HMACSHA256(KeyFor("image-proof-v4",key))) return Convert.ToBase64String(h.ComputeHash(Encoding.UTF8.GetBytes(value))); }
     internal static string Auth { get { return Convert.ToBase64String(Key("image-http-auth-v4")); } }
     internal static string Proof(string value) { using(HMACSHA256 h=new HMACSHA256(Key("image-proof-v4"))) return Convert.ToBase64String(h.ComputeHash(Encoding.UTF8.GetBytes(value))); }
     static bool Equal(byte[] a,byte[] b) { if(a.Length!=b.Length) return false;int d=0;for(int i=0;i<a.Length;i++) d|=a[i]^b[i];return d==0; }
@@ -115,6 +119,20 @@ internal sealed class NetworkHost : IDisposable {
 }
 
 internal static class NetworkSender {
+    internal static void VerifyPair(BridgeSettings settings) {
+        settings.Validate();
+        if(settings.Receiver) throw new InvalidDataException("Expected sender pairing.");
+        ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;
+        string nonce=Guid.NewGuid().ToString("N");
+        HttpWebRequest request=(HttpWebRequest)WebRequest.Create(settings.Endpoint+"/health/"+nonce);
+        request.Timeout=15000;request.ReadWriteTimeout=15000;request.AllowAutoRedirect=false;
+        request.Headers["Authorization"]="Bearer "+SecureImage.AuthFor(settings.Key);
+        using(WebResponse response=request.GetResponse()) using(Stream stream=response.GetResponseStream()) {
+            byte[] buffer=new byte[256];int length=0,n;
+            while((n=stream.Read(buffer,length,buffer.Length-length))>0) { length+=n;if(length==buffer.Length) throw new InvalidDataException("Peer reply too large."); }
+            if(!SecureImage.EqualText(Encoding.UTF8.GetString(buffer,0,length),"RemoteImageBridge:"+SecureImage.ProofFor(settings.Key,nonce))) throw new InvalidDataException("配對驗證失敗，請重新複製接收端配對碼。");
+        }
+    }
     static HttpWebRequest Request(string url,string method) {
         ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;
         HttpWebRequest request=(HttpWebRequest)WebRequest.Create(url);request.Method=method;request.Timeout=20000;request.ReadWriteTimeout=15000;

@@ -8,7 +8,7 @@ Files:
 
 - `overview-zh.png` / `.svg`: local sender versus remote receiver.
 - `overview-en.png` / `.svg`: English version.
-- `installation-zh.png` / `.svg`: six-step installation flow.
+- `installation-zh.png` / `.svg`: three-step installation flow.
 - `installation-en.png` / `.svg`: English version.
 - `image-paste-guide.skc`: all four native editable pages.
 

@@ -1,0 +1,52 @@
+name: Build and request approved code signing
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sign:
+    if: github.repository == 'evan6007/chrome-remote-desktop-image-paste' && github.ref == 'refs/heads/main' && vars.SIGNPATH_ENABLED == 'true'
+    runs-on: windows-latest
+    environment: code-signing
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Validate signing configuration
+        shell: powershell
+        env:
+          ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+        run: |
+          if (-not $env:ORGANIZATION_ID -or -not $env:API_TOKEN) { throw 'SignPath enrollment and credentials are required.' }
+      - name: Check source and build
+        shell: powershell
+        run: |
+          .\scripts\Check-PublicTree.ps1
+          .\scripts\Build.ps1 -SelfTest
+          .\scripts\Check-Release.ps1
+      - name: Upload exact universal executable for provenance
+        id: unsigned
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: signing-input
+          path: dist/unsigned/ChromeRemoteDesktopImagePaste-Setup.exe
+          if-no-files-found: error
+      - name: Request SignPath signing with maintainer approval
+        uses: signpath/github-action-submit-signing-request@c92b958760219087e01f8d67a1669ed57afe2627 # v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: chrome-remote-desktop-image-paste
+          signing-policy-slug: release-signing
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: dist/signed
+      - name: Verify trusted signature, timestamp, identity and public bundle
+        shell: powershell
+        run: .\scripts\Check-Release.ps1 -Directory .\dist\signed -RequireSignature
+      - name: Retain verified signed output for release review
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: universal-installer-signed
+          path: dist/signed/*
+          if-no-files-found: error
