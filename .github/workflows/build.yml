@@ -1,0 +1,21 @@
+name: Windows build and source checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check public source tree
+        shell: powershell
+        run: .\scripts\Check-PublicTree.ps1
+      - name: Compile Receiver and run isolated logic tests
+        shell: powershell
+        run: .\scripts\Build.ps1 -Role Receiver -SelfTest
+      - name: Compile Sender using the same temporary pair
+        shell: powershell
+        run: .\scripts\Build.ps1 -Role Sender -Endpoint https://example-tunnel.trycloudflare.com -SelfTest
+      # Deliberately no upload-artifact step: binaries contain private pairing credentials.

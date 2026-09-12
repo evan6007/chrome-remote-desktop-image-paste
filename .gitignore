@@ -1,0 +1,18 @@
+# Every generated executable contains a private pairing key.
+.private/
+dist/
+artifacts/
+*.exe
+*.dll
+*.pdb
+*.log
+*.bak
+*LocalConfig.cs
+Pair.cs
+EndpointConfig*.cs
+*endpoint.txt
+*status.txt
+*window.txt
+.vs/
+bin/
+obj/
