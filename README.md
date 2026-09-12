@@ -1,8 +1,10 @@
-# Remote Image Bridge
+# Google Chrome Remote Desktop Image Paste
+
+**Google Chrome 遠端桌面圖片貼上工具 — 本機截圖，遠端直接 Ctrl+V 貼上。**
 
 [繁體中文使用說明](README.zh-TW.md)
 
-Copy a screenshot on one Windows computer and paste the image on another, while using Chrome Remote Desktop.
+Take a screenshot with Win+Shift+S on your local Windows computer, then press Ctrl+V to paste it on the computer you control through Google Chrome Remote Desktop.
 
 This is an experimental **Windows desktop helper**, released as source under the MIT license. It is not a Chrome extension and is not affiliated with Google or Cloudflare. No store account is needed to build or use it.
 

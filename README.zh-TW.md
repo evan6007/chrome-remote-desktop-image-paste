@@ -1,8 +1,10 @@
-# Remote Image Bridge：遠端圖片剪貼簿橋接
+# Google Chrome 遠端桌面圖片貼上工具
+
+**本機截圖，遠端直接 Ctrl+V 貼上。**
 
 [English](README.md)
 
-在一台 Windows 電腦截圖，透過 Chrome 遠端桌面操作另一台電腦時，直接在另一台按 Ctrl+V 貼上圖片。
+在本機按 Win+Shift+S 截圖，透過 Google Chrome 遠端桌面操作另一台電腦時，直接在遠端按 Ctrl+V 貼上圖片，不用先存檔再傳檔。
 
 這是 **MIT 授權的 Windows 桌面工具原始碼**，目前為實驗版，介面為繁體中文。不是 Chrome 擴充功能，也不是 Google 或 Cloudflare 官方產品；自行下載原始碼、建置與使用不需要商店帳號。
 
