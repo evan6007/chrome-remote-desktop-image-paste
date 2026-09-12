@@ -2,7 +2,7 @@
 
 This is a developer/AI runbook. End users should use the [short installation guide](INSTALL.zh-TW.md).
 
-1. Review the prepared [application](SIGNPATH-APPLICATION.md) and apply through [SignPath Foundation](https://signpath.org/apply.html). The maintainer must supply an account email and accept the actual terms/privacy choices. The account is not registered merely by creating this workflow.
+1. Application submission confirmation was observed on 2026-09-12; see the [application record](SIGNPATH-APPLICATION.md). Wait for SignPath's eligibility response before repeating an application or enabling signing. A successful form submission does not verify provider enrollment or approval.
 2. If accepted, complete account MFA and verify source-control MFA. Install the official [SignPath GitHub App](https://docs.signpath.io/trusted-build-systems/github) for this repository only after reviewing its requested permissions.
 3. Create project slug `chrome-remote-desktop-image-paste`, a ZIP-root artifact configuration for exactly `ChromeRemoteDesktopImagePaste-Setup.exe`, and a `release-signing` policy requiring manual maintainer approval. Enforce product name and product/file version restrictions. Use a production Foundation certificate only after it is granted.
 4. Create the GitHub `code-signing` environment with the maintainer as required reviewer and main as its allowed branch. Provider approval remains mandatory even if the GitHub account's plan cannot enforce an environment gate.

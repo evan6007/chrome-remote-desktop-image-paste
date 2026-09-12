@@ -4,6 +4,8 @@
 
 **The v0.2.0 release candidate is unsigned. SignPath enrollment and trusted signing are not yet complete.** It now uses one generic installer: pairing credentials are generated and stored after installation, never embedded in release or signing artifacts. Passing CI, a checksum, MIT licensing or HTTPS delivery does not establish a trusted Windows publisher signature.
 
+**Application status (2026-09-12): submission confirmation observed in the maintainer's browser; awaiting SignPath review.** A submitted application is not provider approval or a signed release.
+
 The separately downloaded Cloudflare binary is signed by its publisher. That signature does not sign or endorse this project's own executable.
 
 ## Intended download experience
@@ -16,7 +18,7 @@ This architecture is implemented in the release candidate. The executable is byt
 
 | Route | Status and constraints |
 | --- | --- |
-| [SignPath Foundation](https://signpath.org/) | Free signing is available to accepted open-source projects; no application or approval is claimed for this project. The project must meet the [eligibility and provenance requirements](https://signpath.org/terms.html), including already releasing the artifact form to be signed |
+| [SignPath Foundation](https://signpath.org/) | Application submission confirmed on 2026-09-12; review pending. The project must meet the [eligibility and provenance requirements](https://signpath.org/terms.html), including already releasing the artifact form to be signed |
 | Microsoft Store **MSIX** distribution | Microsoft can sign the package after Store certification. This requires packaging, policy compatibility and approval; it is not achieved by uploading an arbitrary EXE |
 | Public CA / signing service | Requires a qualifying account, validation and potentially fees. No purchase or enrollment has been made |
 
