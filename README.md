@@ -2,11 +2,15 @@
 
 **Google Chrome 遠端桌面圖片貼上工具 — 本機截圖，遠端直接 Ctrl+V 貼上。**
 
-[繁體中文使用說明](README.zh-TW.md)
+**[Download source ZIP](https://github.com/evan6007/chrome-remote-desktop-image-paste/archive/refs/heads/main.zip)** · **[Full installation guide](docs/INSTALL.md)** · **[繁體中文圖解安裝](docs/INSTALL.zh-TW.md)**
 
 Take a screenshot with Win+Shift+S on your local Windows computer, then press Ctrl+V to paste it on the computer you control through Google Chrome Remote Desktop.
 
 This is an experimental **Windows desktop helper**, released as source under the MIT license. It is not a Chrome extension and is not affiliated with Google or Cloudflare. No store account is needed to build or use it.
+
+![Local screenshot, remote paste](docs/media/overview-en.png)
+
+Diagrams made with [Skechu](https://evan6007.github.io/skechu-ppt/); [download the editable SKC](docs/media/image-paste-guide.skc).
 
 ## What it does
 
@@ -17,15 +21,6 @@ This is an experimental **Windows desktop helper**, released as source under the
 - Keeps ordinary text on Chrome Remote Desktop's existing clipboard channel.
 - Provides pause/resume, a tray menu and a status window that does not activate other windows or move the mouse.
 
-```mermaid
-flowchart LR
-    A[Sender: new screenshot] --> B[Encrypt on sender]
-    B --> C[HTTPS via Cloudflare Tunnel]
-    C --> D[Receiver: verify and decrypt]
-    D --> E[Windows image clipboard]
-    E --> F[Ctrl+V in a compatible app]
-```
-
 ## Before you start
 
 - Two Windows desktop computers. Windows 11 has been the development environment; other versions are not verified.
@@ -35,48 +30,24 @@ flowchart LR
 
 **Each build pair contains its own secret. Never publish your generated EXEs, the `.private` directory, or a ZIP of your whole working directory.** Share source using GitHub's source archive; only send a generated Sender EXE to your own trusted sending computer. See [SECURITY.md](SECURITY.md).
 
-## Set up your own pair
+## Installation at a glance
 
-Perform steps 1–3 on the **receiving computer**, in a clean checkout or extracted source ZIP. Build both roles in the same checkout so they share the newly generated key.
+The **remote Receiver** is the computer you control inside Chrome Remote Desktop. The **local Sender** is the home computer or laptop whose keyboard you are using.
 
-### 1. Build and install the receiver
+1. **On the remote computer:** download the source ZIP and choose **Extract All**.
+2. In the extracted folder, double-click **`1-Install-Receiver.cmd`**. Wait for its status window to say connection verified.
+3. **Still remotely, in the same folder:** double-click **`2-Create-Sender.cmd`**.
+4. Use Chrome Remote Desktop's **Download file** action to transfer `dist\RemoteImageBridge-Sender.exe` to your local computer.
+5. **On the local computer:** double-click that Sender EXE and wait for connection verified.
+6. Make a new local **Win+Shift+S** screenshot, wait for **100%**, then **Ctrl+V** in an image-capable app on the remote desktop.
 
-Open Windows PowerShell in this project folder:
+**[Follow the complete illustrated guide →](docs/INSTALL.md)** It covers opening the ZIP, exactly which computer each step runs on, the console/status messages, re-pairing, updates, removal and troubleshooting. [繁體中文完整圖解 →](docs/INSTALL.zh-TW.md)
 
-```powershell
-.\scripts\Build.ps1 -Role Receiver -SelfTest
-.\scripts\Install-Tunnel.ps1
-```
+![Remote-first, then local installation sequence](docs/media/installation-en.png)
 
-The second command explicitly downloads the official Cloudflare Windows binary, verifies its GitHub SHA-256 digest and Windows signature, and places it under `%LOCALAPPDATA%\RemoteImageBridge`. It does not install a Windows service or modify firewall rules.
+### Code signing policy
 
-Double-click `dist\RemoteImageBridge-Receiver.exe`. It installs for the current user, registers login startup and opens its status window. Wait until it reports that the connection has been verified.
-
-If local PowerShell policy blocks downloaded scripts, inspect the source and follow your organization's script policy. No machine-wide execution-policy change is required by this project.
-
-### 2. Build the sender for this receiver
-
-Back in the **same checkout**:
-
-```powershell
-.\scripts\Build.ps1 -Role Sender -UseRunningReceiver -SelfTest
-```
-
-This reads the current receiver endpoint and uses the key generated in step 1. It does not contact the endpoint during its logic tests.
-
-### 3. Install on the sending computer
-
-Transfer only `dist\RemoteImageBridge-Sender.exe` to your trusted sending computer using Chrome Remote Desktop's file-download function or another trusted transfer method. Double-click it **on that computer**.
-
-Wait for `連線已確認` (connection verified), then make a new screenshot. When the sender shows 100% / `圖片已到遠端`, paste in a compatible app on the receiver. Images present before startup are not automatically sent; make a new capture or copy the image again.
-
-### After the receiver restarts
-
-The Quick Tunnel URL changes. Click `重新配對` (re-pair) on the sender, then switch into the remote-desktop view to deliver the short pairing message through Chrome Remote Desktop's text clipboard channel. If the reply does not arrive, click re-pair on the receiver and return to the sender.
-
-For an explicit endpoint update, rebuild the Sender in the original checkout with `-UseRunningReceiver` and reinstall it on the sender. Exit the sender helper and remove only its `%LOCALAPPDATA%\RemoteImageBridge\remote-endpoint.txt` cache if it retains an older re-paired URL, then reopen it.
-
-Re-pairing can require switching windows. Individual **image transfers** use the independent HTTPS connection and do not require those focus switches.
+This is currently an **unsigned source/testing release**, not a signed one-click product download. The launchers automate the private build; they do not supply a trusted publisher certificate. A reusable signed installer with runtime pairing is planned but not implemented. [Current status and distribution options](docs/CODE-SIGNING.md).
 
 ## Controls and removal
 
@@ -101,7 +72,7 @@ Re-pairing can require switching windows. Individual **image transfers** use the
 
 The included `--self-test` suite checks chunk assembly compatibility, limits, hashes, image validation, native memory conversion, clipboard protection rules, authenticated encryption and endpoint validation. It does not change the user's live clipboard or prove cross-machine paste success.
 
-Run:
+Run developer validation in a separate fresh checkout; the placeholder Sender below is not an installer for a live pair:
 
 ```powershell
 .\scripts\Build.ps1 -Role Receiver -SelfTest

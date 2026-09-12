@@ -14,8 +14,8 @@ jobs:
         run: .\scripts\Check-PublicTree.ps1
       - name: Compile Receiver and run isolated logic tests
         shell: powershell
-        run: .\scripts\Build.ps1 -Role Receiver -SelfTest
+        run: .\scripts\Setup.ps1 -Action Receiver -BuildOnly
       - name: Compile Sender using the same temporary pair
         shell: powershell
-        run: .\scripts\Build.ps1 -Role Sender -Endpoint https://example-tunnel.trycloudflare.com -SelfTest
+        run: .\scripts\Setup.ps1 -Action Sender -BuildOnly
       # Deliberately no upload-artifact step: binaries contain private pairing credentials.

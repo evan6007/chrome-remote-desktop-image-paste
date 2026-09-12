@@ -2,70 +2,57 @@
 
 **本機截圖，遠端直接 Ctrl+V 貼上。**
 
-[English](README.md)
+**[下載最新原始碼 ZIP](https://github.com/evan6007/chrome-remote-desktop-image-paste/archive/refs/heads/main.zip)** · **[完整圖解安裝教學](docs/INSTALL.zh-TW.md)** · [English](README.md)
 
 在本機按 Win+Shift+S 截圖，透過 Google Chrome 遠端桌面操作另一台電腦時，直接在遠端按 Ctrl+V 貼上圖片，不用先存檔再傳檔。
 
-這是 **MIT 授權的 Windows 桌面工具原始碼**，目前為實驗版，介面為繁體中文。不是 Chrome 擴充功能，也不是 Google 或 Cloudflare 官方產品；自行下載原始碼、建置與使用不需要商店帳號。
+![本機截圖，遠端接收與貼上](docs/media/overview-zh.png)
 
-## 可以做什麼
+圖由 [Skechu](https://evan6007.github.io/skechu-ppt/) 繪製，附上 [可編輯 SKC 原稿](docs/media/image-paste-guide.skc)；可自行修改文字、方塊與箭頭。
 
-- Win+Shift+S 截圖或複製新圖片後，自動傳送到配對的電腦。
-- 圖片先加密，再透過獨立 HTTPS 連線傳送，每張圖不必反覆點 Google Remote 才繼續。
-- 接收端放入 Windows PNG／DIB 剪貼簿，讓相容軟體以 Ctrl+V 貼上。
-- 有固定狀態視窗、進度條及暫停功能；傳送端 100% 代表接收端已確認放入剪貼簿。
-- 不控制滑鼠、不搶其他視窗焦點、不更動注音或鍵盤設定；一般文字沿用 Google Remote 原本的同步功能。
+## 先看兩台各要做什麼
 
-## 安裝自己的兩台電腦
+| 電腦 | 身分 | 操作 |
+| --- | --- | --- |
+| 你人坐在前面的家裡電腦／筆電 | 本機／傳送端 | 截圖，安裝產生的 Sender EXE |
+| Google Remote 畫面裡被你控制的電腦 | 遠端／接收端 | 先建置、安裝接收端，再建立 Sender；之後在這裡貼上 |
 
-目前先提供原始碼，每組電腦自行建置兩個配對安裝檔。**請在接收端電腦，用同一份專案完成兩端的建置。** 需要 Windows、PowerShell 及 .NET Framework 4.8；不需要 Visual Studio 或 NuGet。開發環境為 Windows 11，其他 Windows 版本尚未驗證。
+## 第一次安裝
 
-### 1. 接收端建置
+1. **先在遠端電腦**下載本專案 ZIP，按右鍵「全部解壓縮」。
+2. 雙擊 **`1-Install-Receiver.cmd`**，等接收端視窗顯示「連線已確認」。
+3. **仍在遠端、同一個資料夾**，雙擊 **`2-Create-Sender.cmd`**。
+4. Google Remote 側邊欄選「下載檔案」，把 `dist\RemoteImageBridge-Sender.exe` 下載到本機。
+5. **回到本機電腦**雙擊 Sender EXE，等「連線已確認」。
+6. 本機重新按 **Win+Shift+S** 截圖，等 **100%** 後，在遠端目標程式按 **Ctrl+V**。
 
-下載原始碼 ZIP 或 git clone，解壓縮後在專案資料夾開 PowerShell：
+**[第一次使用請看完整教學 →](docs/INSTALL.zh-TW.md)** 每一步都有在哪台操作、會出現什麼、下一步按哪裡，並包含重新配對、排錯、更新與移除。
 
-```powershell
-.\scripts\Build.ps1 -Role Receiver -SelfTest
-.\scripts\Install-Tunnel.ps1
-```
+![第一次安裝的六個步驟](docs/media/installation-zh.png)
 
-第二行會從 Cloudflare 官方 GitHub 下載 tunnel 程式，確認 SHA-256 與 Windows 簽章。接著雙擊 `dist\RemoteImageBridge-Receiver.exe`，等視窗顯示「連線已確認」。
+## 安裝前須知
 
-工具只安裝到目前使用者的 `%LOCALAPPDATA%\RemoteImageBridge`，並加入使用者登入自動啟動，不建立 Windows 系統服務、不更動防火牆。若組織限制 PowerShell 腳本執行，請依組織規定處理；此專案不要求更動全機執行原則。
+- Windows 原始碼實驗版，開發環境為 Windows 11；需要 .NET Framework 4.8，腳本會自動建置，不需要 Visual Studio 或 Git。
+- 目前不是 Chrome 擴充功能，也不是 Google 或 Cloudflare 官方產品。
+- **目前沒有公開受信任的程式碼簽章，不能保證下載或執行時不出現 Windows 提示。** 兩個啟動腳本方便測試，不等同正式簽章安裝檔。[Code signing policy／簽章現況](docs/CODE-SIGNING.md)
+- 每組配對的 EXE 都包含自己的密鑰。分享給朋友時分享 GitHub 原始碼，讓朋友建立另一組；不要公開自己的配對 EXE、`.private` 或工作資料夾 ZIP。
+- 接收端第一次安裝需要下載官方 Cloudflare 網路元件。兩台都要能上網。
 
-### 2. 仍在接收端，建置傳送端
+## 每次使用
 
-在同一份專案執行：
+**兩端工具執行中且未暫停 → 本機截圖 → 等 100% → 遠端 Ctrl+V。**
 
-```powershell
-.\scripts\Build.ps1 -Role Sender -UseRunningReceiver -SelfTest
-```
+圖片不必先存成檔案，也不必每張手動傳檔。只能貼文字的輸入框不會因此支援圖片。工具啟用時新複製的圖片會自動傳送，不想傳時可以暫停；按 X 會收至通知區。
 
-它會讀取目前接收端的網址，並使用第一次建置時產生的私人配對密鑰。
+接收端工具重啟後，臨時網址會改變，按「重新配對」並依視窗提示切換一次遠端畫面；[完整配對步驟](docs/INSTALL.zh-TW.md#遠端重開機或工具重啟後如何重新配對)。
 
-### 3. 傳送端安裝
+## 目前限制與驗證
 
-透過 Google Remote 的「下載檔案」，把 `dist\RemoteImageBridge-Sender.exe` 下載到你自己的傳送端電腦，再在那台雙擊。等「連線已確認」，重新截一張圖；看到「圖片已到遠端」與 100% 後，就能在接收端貼上。
+- 目前為單向傳圖，每個 Windows 使用者只支援一組配對；圖片最多 24 MiB／3600 萬像素。
+- 圖片在記憶體處理，未寫入圖片檔或一般文字日誌；詳見 [隱私與安全說明](SECURITY.md)。
+- 兩台時鐘需要相差少於五分鐘。Cloudflare Quick Tunnel 是開發測試通道，沒有長期穩定性保證。
+- 建置與自我測試通過不等於所有兩台實機、網路與貼上目標都已驗證。[完整技術與測試範圍](README.md#validation-and-current-status)
 
-**每組建置的 EXE 都包含私人配對密鑰，只能交給自己的配對電腦。** 分享給朋友時請分享這個 GitHub 專案，讓朋友自行產生另一組；不要公開你的 `dist/`、`.private/` 或整個工作資料夾 ZIP。
+## 開源授權
 
-## 接收端重開後
-
-目前使用的 Cloudflare Quick Tunnel 每次重啟會更換網址。在傳送端按「重新配對」，切回遠端畫面讓短控制訊息同步；必要時在接收端也按「重新配對」，再切回傳送端。
-
-若仍無法配對，可以在原專案重跑 `Build.ps1 -Role Sender -UseRunningReceiver`，再更新傳送端。如果傳送端保留了舊配對網址，先結束工具，只移除傳送端 `%LOCALAPPDATA%\RemoteImageBridge\remote-endpoint.txt`，再開工具。
-
-配對階段可能需要切換視窗；**圖片傳輸本身不再走 Google Remote 的文字分段通道**。
-
-## 目前限制
-
-- 實驗版，正式公開分支的跨機截圖與貼上仍需要實機驗證，不能把單機測試當成已完成。
-- 單向傳圖，每個 Windows 使用者目前只支援一组配對。單張最多 24 MiB／3600 萬像素。
-- 工具啟用期間，新複製的圖片都會自動傳送；不想傳時可暫停。正在傳的一張可能會完成，完全停止可結束工具。
-- 不會自動傳送啟動前已存在的圖片；請重新截圖或複製。
-- 關閉主視窗會收至通知區；通知區可「停止並取消開機啟動」。
-- 圖片不存入檔案，僅在記憶體及 Windows 剪貼簿處理；診斷紀錄不包含圖片或一般文字內容，但有時間、大小、狀態等資訊。
-- 兩台時鐘需要相差少於五分鐘。
-- Quick Tunnel 官方只定位為測試與開發用途，沒有穩定性保證；本專案沒有提供代管服務。[Cloudflare 說明](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/trycloudflare/)
-
-完整技術與驗證界線見 [英文 README](README.md)。私人資訊處理見 [SECURITY.md](SECURITY.md)。歡迎回報問題與送 PR；請勿附上私人配對 EXE、密鑰或未清理的日誌。
+MIT 授權，歡迎使用與改進。[LICENSE](LICENSE) · [第三方元件](THIRD_PARTY_NOTICES.md) · [回報問題](https://github.com/evan6007/chrome-remote-desktop-image-paste/issues)
