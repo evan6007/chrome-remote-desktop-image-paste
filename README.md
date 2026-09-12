@@ -2,13 +2,13 @@
 
 **本機截圖，遠端直接 Ctrl+V。**
 
-[⬇ 下載 Windows 測試版](https://github.com/evan6007/chrome-remote-desktop-image-paste/releases/tag/v0.2.0-rc.1) · [安裝圖解](docs/INSTALL.zh-TW.md) · [English](docs/README.en.md)
+[**⬇ 下載 Windows 測試版**](https://github.com/evan6007/chrome-remote-desktop-image-paste/releases/download/v0.2.0-rc.1/ChromeRemoteDesktopImagePaste-Setup.exe) · [安裝圖解](docs/INSTALL.zh-TW.md) · [English](docs/README.en.md)
 
 ![本機截圖，遠端貼上](docs/media/overview-zh.png)
 
-1. **遠端電腦：**安裝後選「接收圖片」，按「配對電腦」複製配對碼。
-2. **手邊電腦：**安裝同一個程式，選「傳送圖片」，貼上配對碼。
-3. **開始用：**手邊按 **Win+Shift+S** 截圖，等 **100%**，遠端按 **Ctrl+V**。
+1. **遠端電腦：** 安裝後選「接收圖片」，按「配對電腦」複製配對碼。
+2. **手邊電腦：** 安裝同一個程式，選「傳送圖片」，貼上配對碼。
+3. **開始用：** 手邊按 **Win+Shift+S** 截圖，等 **100%**，遠端按 **Ctrl+V**。
 
 Windows 10/11 · 免費開源 · 兩台都要安裝 · 非 Google 官方產品
 
